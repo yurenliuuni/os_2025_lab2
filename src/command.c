@@ -20,7 +20,7 @@ char *read_line()
 
 	if (fgets(buffer, BUF_SIZE, stdin) != NULL) {
 		if (buffer[0] == '\n' || buffer[0] == ' ' || buffer[0] == '\t') {
-			free(buffer);
+			free(buffer); 
 			buffer = NULL;
 		} 
 		else {
@@ -29,7 +29,6 @@ char *read_line()
 			++history_count;
 		}
 	}
-
 	return buffer;
 }
 
@@ -60,6 +59,7 @@ struct cmd *split_line(char *line)
     char *token = strtok(line, " ");
     while (token != NULL) {
         if (token[0] == '|') {
+			new_cmd->pipe_num++;
             struct cmd_node *new_pipe = (struct cmd_node *)malloc(sizeof(struct cmd_node));
 			new_pipe->args = (char **)malloc(args_length * sizeof(char *));
 			for (int i = 0; i < args_length; ++i)
@@ -83,7 +83,8 @@ struct cmd *split_line(char *line)
 			temp->length++;
         }
         token = strtok(NULL, " ");
-		new_cmd->pipe_num++;
+		//這裡好像是錯的
+		// new_cmd->pipe_num++;
 
     }
 

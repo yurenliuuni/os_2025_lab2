@@ -4,7 +4,7 @@
 
 int history_count;
 char *history[MAX_RECORD_NUM];
-
+ 
 int main(int argc, char *argv[])
 {
 	history_count = 0;
@@ -18,3 +18,7 @@ int main(int argc, char *argv[])
 
 	return 0;
 }
+
+
+
+

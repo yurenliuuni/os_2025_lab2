@@ -20,8 +20,25 @@
  * 
  */
 void redirection(struct cmd_node *p){
-	
-}
+		if (p->in_file != NULL){
+			int fd_in = open(p->in_file, O_RDONLY, 0);
+			if (fd_in < 0){
+				perror("open input file error");
+				exit(EXIT_FAILURE);
+			}
+			dup2(fd_in, STDIN_FILENO);
+			close(fd_in);
+		}
+		if (p->out_file != NULL){
+			int fd_out = open(p->out_file, O_WRONLY| O_CREAT , 0644); //if not exit then create one 
+			if (fd_out <0){
+				perror("open out_file error ");
+				exit(EXIT_FAILURE);
+			}
+			dup2(fd_out, STDOUT_FILENO);
+			close(fd_out);
+		}
+}	
 // ===============================================================
 
 // ======================= requirement 2.2 =======================
@@ -37,7 +54,27 @@ void redirection(struct cmd_node *p){
  */
 int spawn_proc(struct cmd_node *p)
 {
-  	return 1;
+	pid_t pid;
+	pid = fork();
+	switch (pid)
+	{
+	case -1:
+		perror("fork");
+		exit(EXIT_FAILURE);
+		break;
+	case 0: //child process execute here
+		redirection(p);
+		//  since it is child process, not need to recover shell stdin and stdout
+		
+		execvp(p->args[0], p->args);
+		break;
+	default: 
+		//pid is child's id 
+		//parent exec here
+		wait(NULL); //wait until child process is done
+		break;
+	}
+	return 1;
 }
 // ===============================================================
 
@@ -51,15 +88,66 @@ int spawn_proc(struct cmd_node *p)
  * @return int
  * Return execution status 
  */
-int fork_cmd_node(struct cmd *cmd)
-{
+int fork_cmd_node (struct cmd *cmd){
+	struct cmd_node * temp = cmd->head;
+	int last_pipe_read_fd = -1;
+	pid_t pid_childs[cmd->pipe_num+1];
+
+	for (int i =0; i< cmd->pipe_num +1  ;i++){
+		int pipefd[2];
+		if (i != (cmd->pipe_num)){ //最後一個child process不用pipe
+			if (pipe(pipefd) == -1){
+				perror("pipe");
+				exit(EXIT_FAILURE);
+			}
+		}
+
+		pid_childs[i] = fork();
+
+		if (pid_childs[i] == -1){ 
+			perror("fork");
+			exit(EXIT_FAILURE);
+		}else if (pid_childs[i] == 0){
+			if (last_pipe_read_fd != -1){ //the first child process
+				dup2(last_pipe_read_fd, STDIN_FILENO);
+				close(last_pipe_read_fd);
+			}
+
+			if (i != (cmd->pipe_num )){
+				dup2(pipefd[1], STDOUT_FILENO);
+				close(pipefd[1]);
+				close(pipefd[0]); //no need for the next child 
+			}
+			redirection(temp);
+            execvp(temp->args[0], temp->args);
+            perror("execvp");
+            exit(EXIT_FAILURE);
+		}else{
+			if (i !=0){
+				close(last_pipe_read_fd);
+			}
+			if (i !=  (cmd->pipe_num )){
+				close(pipefd[1]);
+				last_pipe_read_fd = pipefd[0];
+			}
+
+			waitpid(pid_childs[i], NULL, 0);
+
+		}
+
+		temp = temp->next;
+
+	}
+	// for (int i = 0; i < cmd->pipe_num+1; i++) {
+	// }
+
 	return 1;
 }
 // ===============================================================
 
-
+ 
 void shell()
-{
+{ 
 	while (1) {
 		printf(">>> $ ");
 		char *buffer = read_line();
@@ -71,7 +159,6 @@ void shell()
 		int status = -1;
 		// only a single command
 		struct cmd_node *temp = cmd->head;
-		
 		if(temp->next == NULL){
 			status = searchBuiltInCommand(temp);
 			if (status != -1){

@@ -14,13 +14,13 @@ struct cmd_node {
 	struct cmd_node *next;
 	
 };
-
+ 
 struct cmd {
 	struct cmd_node *head;
 	int pipe_num;
 };
 
-extern char *history[MAX_RECORD_NUM];
+extern char *history[MAX_RECORD_NUM]; //defined in my_shell.c, which is used to trace record
 extern int history_count;
 
 char *read_line();

@@ -8,7 +8,7 @@
 #include <fcntl.h>
 #include "../include/builtin.h"
 
-
+ 
 
 /**
  * @brief 
@@ -40,7 +40,7 @@ int execBuiltInCommand(int status,struct cmd_node *cmd){
 	return status;
 }
 
-int help(char **args)
+const int help(char **args)
 {
 	int i;
     printf("--------------------------------------------------\n");
@@ -53,13 +53,20 @@ int help(char **args)
 	return 1;
 }
 // ======================= requirement 2.1 =======================
-int cd(char **args)
+const int cd(char **args)
 {
+	if (args[1] == NULL){
+		perror("cd");
+	}else{
+		if (chdir(args[1]) != 0){
+			perror("cd");
+		}
+	}
 	return 1;
 }
 // ===============================================================
 
-int pwd(char **args)
+const int pwd(char **args)
 {
 	char cwd[BUF_SIZE];
     if (getcwd(cwd, sizeof(cwd)) != NULL) {
@@ -70,7 +77,7 @@ int pwd(char **args)
     return 1;
 }
 
-int echo(char **args)
+const int echo(char **args)
 {
 	bool newline = true;
 	for (int i = 1; args[i]; ++i) {
@@ -88,12 +95,12 @@ int echo(char **args)
 	return 1;
 }
 
-int exit_shell(char **args)
+const int exit_shell(char **args)
 {
 	return 0;
 }
 
-int record(char **args)
+const int record(char **args)
 {
 	if (history_count < MAX_RECORD_NUM) {
 		for (int i = 0; i < history_count; ++i)
@@ -113,6 +120,7 @@ const char *builtin_str[] = {
  	"exit",
  	"record",
 };
+
 
 const int (*builtin_func[]) (char **) = {
 	&help,
